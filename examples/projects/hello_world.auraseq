@@ -1,1 +1,49 @@
 
+{
+  "format": "auraseq",
+  "version": "1.0",
+  "ppq": 480,
+  "tempo": 120,
+  "time_signature": "4/4",
+  "tracks": [
+    {
+      "id": "track-1",
+      "name": "Main Vocal",
+      "voice": "demo_metashi.auravoice",
+      "volume": 1.0,
+      "pan": 0.0,
+      "notes": [
+        {
+          "note": "C4",
+          "tick": 0,
+          "length": 480,
+          "lyric": "a",
+          "phoneme": "a",
+          "velocity": 0.8,
+          "expression": "neutral",
+          "pitch_curve": []
+        },
+        {
+          "note": "D4",
+          "tick": 480,
+          "length": 480,
+          "lyric": "i",
+          "phoneme": "i",
+          "velocity": 0.8,
+          "expression": "neutral",
+          "pitch_curve": []
+        },
+        {
+          "note": "E4",
+          "tick": 960,
+          "length": 960,
+          "lyric": "u",
+          "phoneme": "u",
+          "velocity": 0.8,
+          "expression": "neutral",
+          "pitch_curve": []
+        }
+      ]
+    }
+  ]
+}
