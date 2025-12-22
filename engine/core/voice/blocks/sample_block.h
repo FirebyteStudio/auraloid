@@ -1,29 +1,14 @@
 #pragma once
-
-#include <string>
 #include <vector>
-#include <cstdint>
+#include "../loaded_voice.h"
+#include "../auravoice_reader.h"
 
-namespace auraloid::voice::blocks {
+namespace auraloid {
 
-// Represents a single audio sample entry inside a voicebank
-// Audio data itself is stored as FLAC inside the .auravoice container
-struct SampleEntry {
-    std::string id;          // Unique sample identifier
-    std::string phoneme;     // Associated phoneme (e.g. "a", "k", "sil")
-
-    uint32_t sampleRate;     // Sample rate of this sample
-    uint16_t channels;       // Channel count
-
-    uint64_t dataOffset;     // Byte offset inside .auravoice file
-    uint64_t dataSize;       // Size of FLAC data in bytes
+class SampleBlockParser {
+public:
+    // Parse SAMPLE_BLOCK from raw bytes
+    static std::vector<Sample> parse(const std::vector<uint8_t>& data);
 };
 
-// SampleBlock
-// Contains all sample references used by the voice
-struct SampleBlock {
-    std::vector<SampleEntry> samples;
-};
-
-} // namespace auraloid::voice::blocks
-
+}
