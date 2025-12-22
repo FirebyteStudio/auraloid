@@ -1,29 +1,14 @@
-
 #pragma once
-
-#include <string>
 #include <vector>
-#include <cstdint>
+#include "../loaded_voice.h"
+#include "../auravoice_reader.h"
 
-namespace auraloid::voice::blocks {
+namespace auraloid {
 
-// Represents a single phoneme definition
-struct Phoneme {
-    std::string symbol;      // Phoneme symbol (e.g. "a", "ka", "N")
-    std::string alias;       // Optional alias / fallback
-
-    float defaultDuration;   // Default duration in seconds
-    float minDuration;       // Minimum allowed duration
-    float maxDuration;       // Maximum allowed duration
-
-    bool vowel;              // True if vowel
-    bool consonant;          // True if consonant
+class PhonemeBlockParser {
+public:
+    // Parse a PHONEME_BLOCK from raw bytes
+    static std::vector<Phoneme> parse(const std::vector<uint8_t>& data);
 };
 
-// PhonemeBlock
-// Defines the phoneme inventory and timing rules of the voice
-struct PhonemeBlock {
-    std::vector<Phoneme> phonemes;
-};
-
-} // namespace auraloid::voice::blocks
+}
