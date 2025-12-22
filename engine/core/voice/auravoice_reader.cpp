@@ -1,117 +1,72 @@
 #include "auravoice_reader.h"
-
-#include "blocks/voice_info.h"
-#include "blocks/phoneme_block.h"
-#include "blocks/sample_block.h"
-#include "blocks/model_block.h"
-
-#include <fstream>
-#include <vector>
-#include <cstdint>
-#include <memory>
+#include <stdexcept>
+#include <cstring>
 
 namespace auraloid {
-class Voice;
+
+AuravoiceReader::AuravoiceReader(const std::string& path) {
+    file.open(path, std::ios::binary);
+    if (!file)
+        throw std::runtime_error("Failed to open .auravoice file");
+
+    readHeader();
+    scanBlocks();
 }
 
-namespace auraloid::voice {
-
-// Auravoice file layout (simplified)
-// [Header]
-// [BlockHeader][BlockData]
-// [BlockHeader][BlockData] ...
-
-struct FileHeader {
-    char magic[4];      // 'A','V','O','I'
-    uint8_t major;
-    uint8_t minor;
-};
-
-struct BlockHeader {
-    char id[4];         // INFO, PHON, SAMP, MODL
-    uint64_t size;      // Size of block data
-};
-
-static bool readFileHeader(std::ifstream& file, FileHeader& out) {
-    file.read(reinterpret_cast<char*>(&out), sizeof(FileHeader));
-    return file.good();
+AuravoiceReader::~AuravoiceReader() {
+    if (file.is_open())
+        file.close();
 }
 
-static bool readBlockHeader(std::ifstream& file, BlockHeader& out) {
-    file.read(reinterpret_cast<char*>(&out), sizeof(BlockHeader));
-    return file.good();
+const AuravoiceHeader& AuravoiceReader::header() const {
+    return fileHeader;
 }
 
-bool AuravoiceReader::validateHeader(const std::string& path) {
-    std::ifstream file(path, std::ios::binary);
-    if (!file.is_open()) {
-        return false;
-    }
-
-    FileHeader header{};
-    if (!readFileHeader(file, header)) {
-        return false;
-    }
-
-    if (header.magic[0] != 'A' || header.magic[1] != 'V' ||
-        header.magic[2] != 'O' || header.magic[3] != 'I') {
-        return false;
-    }
-
-    return true;
+const std::vector<BlockHeader>& AuravoiceReader::blocks() const {
+    return blockTable;
 }
 
-std::shared_ptr<auraloid::Voice> AuravoiceReader::load(const std::string& path) {
-    std::ifstream file(path, std::ios::binary);
-    if (!file.is_open()) {
-        return nullptr;
-    }
+void AuravoiceReader::readHeader() {
+    file.read(reinterpret_cast<char*>(&fileHeader), sizeof(AuravoiceHeader));
 
-    FileHeader header{};
-    if (!readFileHeader(file, header)) {
-        return nullptr;
-    }
+    if (std::strncmp(fileHeader.magic, "AURA", 4) != 0)
+        throw std::runtime_error("Invalid Auraloid file (bad magic)");
 
-    if (header.magic[0] != 'A' || header.magic[1] != 'V' ||
-        header.magic[2] != 'O' || header.magic[3] != 'I') {
-        return nullptr;
-    }
+    if (fileHeader.header_size < sizeof(AuravoiceHeader))
+        throw std::runtime_error("Invalid header size");
+}
 
-    // Placeholder containers
-    blocks::VoiceInfo voiceInfo{};
-    blocks::PhonemeBlock phonemeBlock{};
-    blocks::SampleBlock sampleBlock{};
-    blocks::ModelBlock modelBlock{};
+void AuravoiceReader::scanBlocks() {
+    file.seekg(fileHeader.header_size, std::ios::beg);
 
-    // Read blocks
-    while (file.good() && !file.eof()) {
-        BlockHeader block{};
-        if (!readBlockHeader(file, block)) {
+    while (file && !file.eof()) {
+        uint32_t typeRaw;
+        uint32_t size;
+
+        file.read(reinterpret_cast<char*>(&typeRaw), sizeof(uint32_t));
+        file.read(reinterpret_cast<char*>(&size), sizeof(uint32_t));
+
+        if (file.fail())
             break;
-        }
 
-        std::streampos dataPos = file.tellg();
+        BlockHeader block;
+        block.type = static_cast<BlockType>(typeRaw);
+        block.size = size;
+        block.offset = static_cast<uint32_t>(file.tellg());
 
-        if (std::strncmp(block.id, "INFO", 4) == 0) {
-            // TODO: parse VoiceInfo block
-        }
-        else if (std::strncmp(block.id, "PHON", 4) == 0) {
-            // TODO: parse PhonemeBlock
-        }
-        else if (std::strncmp(block.id, "SAMP", 4) == 0) {
-            // TODO: parse SampleBlock
-        }
-        else if (std::strncmp(block.id, "MODL", 4) == 0) {
-            // TODO: parse ModelBlock
-        }
+        blockTable.push_back(block);
 
-        // Skip block data
-        file.seekg(dataPos + static_cast<std::streamoff>(block.size));
+        // Skip block payload
+        file.seekg(size, std::ios::cur);
     }
-
-    // TODO: construct Voice object using parsed blocks
-    return nullptr;
 }
 
-} // namespace auraloid::voice
+void AuravoiceReader::readBlockData(const BlockHeader& block,
+                                   std::vector<uint8_t>& out) const {
+    out.resize(block.size);
 
+    file.seekg(block.offset, std::ios::beg);
+    file.read(reinterpret_cast<char*>(out.data()), block.size);
+}
+
+}
