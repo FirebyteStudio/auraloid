@@ -1,29 +1,29 @@
-#include "audio_buffer.h"
-
-#include <string>
+#include "flac_decoder.h"
+#include <dr_flac.h> // https://github.com/mackron/dr_libs
 #include <stdexcept>
+#include <cstring>
 
-namespace auraloid::audio {
+namespace auraloid {
 
-// NOTE:
-// This is a placeholder FLAC decoder implementation.
-// The actual decoding logic will be implemented using
-// an external FLAC library or a custom decoder.
+AudioBuffer FlacDecoder::decodeToBuffer(const std::vector<uint8_t>& flacData) {
+    drflac* pFlac = drflac_open_memory(flacData.data(), flacData.size(), nullptr);
+    if (!pFlac) throw std::runtime_error("Failed to open FLAC memory");
 
-AudioBuffer decodeFlac(const std::string& path) {
-    // For now, we only validate the file path and return
-    // an empty AudioBuffer as a stub.
+    uint64_t totalSamples = pFlac->totalPCMFrameCount * pFlac->channels;
+    std::vector<float> pcm(totalSamples);
 
-    if (path.empty()) {
-        throw std::runtime_error("FLAC path is empty");
+    uint64_t framesRead = drflac_read_pcm_frames_f32(pFlac, pFlac->totalPCMFrameCount, pcm.data());
+    if (framesRead != pFlac->totalPCMFrameCount) {
+        drflac_close(pFlac);
+        throw std::runtime_error("Failed to decode all FLAC frames");
     }
 
-    // Default dummy buffer (mono, 44.1kHz, 0 frames)
-    AudioBuffer buffer(1, 44100);
-    buffer.resize(0);
+    uint32_t sr = pFlac->sampleRate;
+    uint8_t channels = static_cast<uint8_t>(pFlac->channels);
 
-    return buffer;
+    drflac_close(pFlac);
+
+    return AudioBuffer(pcm, sr, channels);
 }
 
-} // namespace auraloid::audio
-
+} // namespace auraloid
