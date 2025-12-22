@@ -1,28 +1,30 @@
 #pragma once
-
 #include <string>
-#include <memory>
+#include <vector>
+#include <fstream>
+#include "block_types.h"
+#include "auravoice_structs.h"
 
 namespace auraloid {
-    class Voice;
-}
 
-namespace auraloid::voice {
-
-// Reader for .auravoice binary files
-// Responsible only for parsing and loading voice data
 class AuravoiceReader {
 public:
-    AuravoiceReader() = default;
-    ~AuravoiceReader() = default;
+    explicit AuravoiceReader(const std::string& path);
+    ~AuravoiceReader();
 
-    // Load a .auravoice file from disk
-    // Returns nullptr on failure
-    std::shared_ptr<auraloid::Voice> load(const std::string& path);
+    const AuravoiceHeader& header() const;
+    const std::vector<BlockHeader>& blocks() const;
+
+    // Low-level block access
+    void readBlockData(const BlockHeader& block, std::vector<uint8_t>& out) const;
 
 private:
-    bool validateHeader(const std::string& path);
+    std::ifstream file;
+    AuravoiceHeader fileHeader;
+    std::vector<BlockHeader> blockTable;
+
+    void readHeader();
+    void scanBlocks();
 };
 
-} // namespace auraloid::voice
-
+}
