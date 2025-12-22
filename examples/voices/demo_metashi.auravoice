@@ -1,1 +1,77 @@
+// Auraloid Voicebank File
+// File: demo_metashi.auravoice
+// Format: AURA / auravoice v1.0
+// NOTE: This is a DEMO PLACEHOLDER file for repository structure.
+// It is NOT a final binary voicebank.
+
+// --------------------------------------------------
+// [FILE HEADER]
+// magic        : 'A' 'U' 'R' 'A'
+// version      : 0x0001
+// voice_type   : 0 (neural)
+// flags        : 0
+// header_size  : engine-defined
+// checksum     : 0x00000000 (placeholder)
+// --------------------------------------------------
+
+// --------------------------------------------------
+// [VOICE_INFO BLOCK] (JSON, UTF-8)
+// {
+//   "id": "auraloid.metashi",
+//   "name": "Metashi",
+//   "language": "ja-JP",
+//   "voice_type": "neural",
+//   "gender": "male",
+//   "range": { "min": "A2", "max": "E6" },
+//   "author": "Auraloid Team",
+//   "engine_version": ">=1.0",
+//   "description": "Soft J-Pop male voice"
+// }
+// --------------------------------------------------
+
+// --------------------------------------------------
+// [PHONEME_BLOCK]
+// phoneme_id | symbol | base_duration
+// 0x0001     | a      | 0.12
+// 0x0002     | i      | 0.12
+// 0x0003     | u      | 0.14
+// --------------------------------------------------
+
+// --------------------------------------------------
+// [TIMBRE_BLOCK]
+// (engine-defined opaque data)
+// --------------------------------------------------
+
+// --------------------------------------------------
+// [PITCH_BLOCK]
+// base_f0     : 110.0
+// f0_min      : 80.0
+// f0_max      : 660.0
+// vibrato_max : 0.8
+// --------------------------------------------------
+
+// --------------------------------------------------
+// [MODEL_BLOCK]
+// model_format : 1 (ONNX)
+// model_size   : (placeholder)
+// model_blob   : (not included)
+// --------------------------------------------------
+
+// --------------------------------------------------
+// [EXPRESSION_BLOCK]
+// id | name    | min | max
+// 0  | neutral | 0.0 | 1.0
+// 1  | soft    | 0.0 | 1.0
+// 2  | power   | 0.0 | 1.0
+// --------------------------------------------------
+
+// --------------------------------------------------
+// [LICENSE_BLOCK]
+// {
+//   "commercial_use": true,
+//   "credit_required": true,
+//   "political_use": false,
+//   "ai_training_allowed": false
+// }
+// --------------------------------------------------
 
