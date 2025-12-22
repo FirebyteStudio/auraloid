@@ -1,17 +1,18 @@
 #pragma once
 #include <string>
-#include "auravoice_reader.h"
+#include "../loaded_voice.h"
+#include "../auravoice_reader.h"
+#include "blocks/voice_info.h"
+#include "blocks/phoneme_block.h"
+#include "blocks/sample_block.h"
+#include "blocks/model_block.h"
 
 namespace auraloid {
 
-struct LoadedVoice;
-
 class AuravoiceLoader {
 public:
-    static LoadedVoice loadFromFile(const std::string& path);
-
-private:
-    static void validateHeader(const AuravoiceHeader& header);
+    // Carrega um arquivo .auravoice e retorna um LoadedVoice
+    static LoadedVoice load(const std::string& path);
 };
 
 }
