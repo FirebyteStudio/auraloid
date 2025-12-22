@@ -1,44 +1,28 @@
 #pragma once
-
 #include <vector>
-#include <cstddef>
+#include <cstdint>
 
-namespace auraloid::audio {
+namespace auraloid {
 
-// Basic PCM audio buffer (engine-internal)
-// All samples are stored as 32-bit floating point
-// Range: -1.0f to 1.0f
 class AudioBuffer {
 public:
     AudioBuffer() = default;
 
-    AudioBuffer(std::size_t channels, std::size_t sampleRate)
-        : channels_(channels), sampleRate_(sampleRate) {}
+    // Inicializa com PCM float
+    AudioBuffer(const std::vector<float>& pcm, uint32_t sampleRate, uint8_t channels);
 
-    void resize(std::size_t frames) {
-        data_.resize(frames * channels_);
-    }
+    // Getter
+    const std::vector<float>& getPCM() const;
+    uint32_t getSampleRate() const;
+    uint8_t getChannels() const;
 
-    float* data() { return data_.data(); }
-    const float* data() const { return data_.data(); }
-
-    std::size_t frames() const {
-        if (channels_ == 0) return 0;
-        return data_.size() / channels_;
-    }
-
-    std::size_t channels() const { return channels_; }
-    std::size_t sampleRate() const { return sampleRate_; }
-
-    void clear() {
-        std::fill(data_.begin(), data_.end(), 0.0f);
-    }
+    // Mistura outro buffer (simples add)
+    void mix(const AudioBuffer& other);
 
 private:
-    std::vector<float> data_;
-    std::size_t channels_ = 0;
-    std::size_t sampleRate_ = 44100;
+    std::vector<float> pcm;
+    uint32_t sampleRate = 44100;
+    uint8_t channels = 1;
 };
 
-} // namespace auraloid::audio
-
+} // namespace auraloid
