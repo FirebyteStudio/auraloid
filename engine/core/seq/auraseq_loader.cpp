@@ -1,47 +1,56 @@
 #include "auraseq_loader.h"
-#include <stdexcept>
+
+#include <fstream>
+#include <iostream>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 namespace auraloid {
 
 LoadedSequence AuraseqLoader::load(const std::string& path) {
-    AuraseqReader reader(path);
-    nlohmann::json j = reader.readJson();
-
     LoadedSequence seq;
+
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "[AuraseqLoader] Failed to open " << path << "\n";
+        return seq;
+    }
+
+    json j;
+    file >> j;
+
     seq.ppq = j.value("ppq", 480);
     seq.tempo = j.value("tempo", 120.0f);
-    seq.timeSignature = j.value("time_signature", "4/4");
+    seq.timeSignature = j.value("timeSignature", "4/4");
 
-    if (!j.contains("tracks") || !j["tracks"].is_array())
-        throw std::runtime_error("Invalid .auraseq: missing tracks");
-
-    for (const auto& t : j["tracks"]) {
+    for (const auto& jt : j["tracks"]) {
         SeqTrack track;
-        track.id = t.value("id", "");
-        track.name = t.value("name", "Track");
-        track.voice = t.value("voice", "");
-        track.volume = t.value("volume", 1.0f);
-        track.pan = t.value("pan", 0.0f);
+        track.id     = jt.value("id", "");
+        track.name   = jt.value("name", "track");
+        track.voice  = jt.value("voice", "");
+        track.volume = jt.value("volume", 1.0f);
+        track.pan    = jt.value("pan", 0.0f);
 
-        if (t.contains("notes") && t["notes"].is_array()) {
-            for (const auto& n : t["notes"]) {
-                SeqNote note;
-                note.note = n.value("note", "C4");
-                note.tick = n.value("tick", 0);
-                note.length = n.value("length", 480);
-                note.lyric = n.value("lyric", "");
-                note.phoneme = n.value("phoneme", "");
-                note.velocity = n.value("velocity", 1.0f);
-                note.expression = n.value("expression", "");
-                if (n.contains("pitch_curve") && n["pitch_curve"].is_array()) {
-                    for (const auto& p : n["pitch_curve"]) {
-                        float t_val = p.value("t", 0.0f);
-                        float v_val = p.value("v", 0.0f);
-                        note.pitchCurve.emplace_back(t_val, v_val);
-                    }
+        for (const auto& jn : jt["notes"]) {
+            SeqNote note;
+            note.note     = jn.value("note", "A4");
+            note.tick     = jn.value("tick", 0);
+            note.length  = jn.value("length", seq.ppq / 2);
+            note.lyric   = jn.value("lyric", "");
+            note.phoneme = jn.value("phoneme", "");
+            note.velocity = jn.value("velocity", 1.0f);
+            note.expression = jn.value("expression", "neutral");
+
+            if (jn.contains("pitchCurve")) {
+                for (const auto& p : jn["pitchCurve"]) {
+                    float t = p[0];
+                    float v = p[1];
+                    note.pitchCurve.emplace_back(t, v);
                 }
-                track.notes.push_back(note);
             }
+
+            track.notes.push_back(note);
         }
 
         seq.tracks.push_back(track);
