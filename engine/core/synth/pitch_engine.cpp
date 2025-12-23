@@ -1,8 +1,10 @@
 #include "pitch_engine.h"
+
 #include <cmath>
-#include <stdexcept>
 
 namespace auraloid {
+
+PitchEngine::PitchEngine() {}
 
 static int noteIndex(char n) {
     switch (n) {
@@ -13,49 +15,58 @@ static int noteIndex(char n) {
         case 'G': return 7;
         case 'A': return 9;
         case 'B': return 11;
-        default: return -1;
     }
+    return 0;
 }
 
-double PitchEngine::noteToFrequency(const std::string& note) {
-    if (note.size() < 2)
-        throw std::runtime_error("Invalid note format");
+float PitchEngine::noteToFrequency(const std::string& note) const {
+    if (note.size() < 2) return 440.0f;
 
-    char base = note[0];
-    int idx = noteIndex(base);
-    if (idx < 0)
-        throw std::runtime_error("Invalid note");
+    char n = note[0];
+    int octave = note.back() - '0';
+    int semitone = noteIndex(n);
 
-    int pos = 1;
-    if (note[pos] == '#') {
-        idx += 1;
-        pos++;
-    }
+    if (note.size() == 3 && note[1] == '#')
+        semitone++;
 
-    int octave = std::stoi(note.substr(pos));
-
-    int midiNote = (octave + 1) * 12 + idx;
-    return 440.0 * std::pow(2.0, (midiNote - 69) / 12.0);
+    int midi = (octave + 1) * 12 + semitone;
+    return 440.0f * std::pow(2.0f, (midi - 69) / 12.0f);
 }
 
-std::vector<float> PitchEngine::applyPitch(
-    const std::vector<float>& input,
-    double sourceFreq,
-    double targetFreq
-) {
-    double ratio = targetFreq / sourceFreq;
-    if (ratio <= 0.0) return input;
+float PitchEngine::evaluate(const Note& note, float t) const {
+    float baseFreq = noteToFrequency(note.note);
 
-    size_t outSize = static_cast<size_t>(input.size() / ratio);
-    std::vector<float> output(outSize);
+    if (note.pitch_curve.empty())
+        return baseFreq;
 
-    for (size_t i = 0; i < outSize; ++i) {
-        size_t srcIndex = static_cast<size_t>(i * ratio);
-        if (srcIndex < input.size())
-            output[i] = input[srcIndex];
-        else
-            output[i] = 0.0f;
+    // Clamp t
+    if (t <= 0.0f) return baseFreq;
+    if (t >= 1.0f) t = 1.0f;
+
+    const PitchPoint* prev = nullptr;
+    const PitchPoint* next = nullptr;
+
+    for (size_t i = 0; i < note.pitch_curve.size(); ++i) {
+        if (note.pitch_curve[i].t >= t) {
+            next = &note.pitch_curve[i];
+            if (i > 0) prev = &note.pitch_curve[i - 1];
+            break;
+        }
     }
+
+    if (!prev || !next)
+        return baseFreq;
+
+    float dt = (t - prev->t) / (next->t - prev->t);
+    float bend = prev->v + (next->v - prev->v) * dt;
+
+    // v ∈ [-1,1] → semitones (-1 = -1st, +1 = +1st)
+    float semitoneOffset = bend;
+    return baseFreq * std::pow(2.0f, semitoneOffset / 12.0f);
+}
+
+}
+
 
     return output;
 }
