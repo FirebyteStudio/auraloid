@@ -1,36 +1,28 @@
 #pragma once
-#include "../voice/loaded_voice.h"
-#include "../seq/auraseq_loader.h"
-#include "../audio/audio_buffer.h"
+
 #include <vector>
+#include <memory>
+
+#include "../audio/audio_buffer.h"
+#include "../voice/loaded_voice.h"
+#include "../seq/auraseq.h"
 
 namespace auraloid {
 
 class SynthRenderer {
 public:
-    SynthRenderer() = default;
+    SynthRenderer();
 
-    void loadVoice(const LoadedVoice& voice);
-    void loadSequence(const LoadedSequence& seq);
+    void setVoice(std::shared_ptr<LoadedVoice> voice);
+    void setSequence(const AuraSeq& sequence);
 
-    // Renderiza a sequência completa em um AudioBuffer
-    AudioBuffer render();
+    AudioBuffer<float> render();
 
 private:
-    LoadedVoice voice;
-    LoadedSequence sequence;
+    std::shared_ptr<LoadedVoice> m_voice;
+    AuraSeq m_sequence;
 
-    // Renderiza uma nota para um buffer
-    AudioBuffer renderNote(const SeqNote& note);
-
-    // Aplica pitch curve simples (linear)
-    void applyPitchCurve(std::vector<float>& pcm, const SeqNote& note);
-
-    // Aplica velocity
-    void applyVelocity(std::vector<float>& pcm, float velocity);
-
-    // Mixa dois buffers
-    void mixBuffer(AudioBuffer& target, const AudioBuffer& src, size_t offset);
+    float noteToFrequency(const std::string& note) const;
 };
 
-} // namespace auraloid
+}
