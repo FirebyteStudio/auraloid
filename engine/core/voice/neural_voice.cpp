@@ -1,65 +1,33 @@
-#include "neural_voice.h"
-
-#include <cmath>
-#include <iostream>
+#include "neural_runtime.h"
+#include <onnxruntime_cxx_api.h>
 
 namespace auraloid {
 
-NeuralVoice::NeuralVoice()
-    : m_sampleRate(44100) {}
+class NeuralONNXRuntime : public NeuralRuntime {
+    Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "auraloid"};
+    Ort::Session* session = nullptr;
 
-bool NeuralVoice::loadModel(const std::string& path) {
-    return m_onnx.load(path);
-}
+public:
+    bool loadModel(const void* data, size_t size) override {
+        Ort::SessionOptions opts;
+        opts.SetIntraOpNumThreads(1);
 
-AudioBuffer<float> NeuralVoice::render(
-    const RenderRequest& request
-) {
-    int totalFrames = static_cast<int>(
-        request.duration * m_sampleRate
-    );
-
-    AudioBuffer<float> buffer(1, totalFrames);
-
-    float freq = request.frequency;
-    float velocity = request.velocity;
-
-    float vibratoFreq = 5.0f;      // 5 Hz
-    float vibratoDepth = 0.01f;    // ±1%
-
-    for (int i = 0; i < totalFrames; ++i) {
-        float t = static_cast<float>(i) / m_sampleRate;
-
-        // vibrato
-        float vib =
-            std::sin(2.0f * M_PI * vibratoFreq * t)
-            * vibratoDepth;
-
-        float phase =
-            2.0f * M_PI * freq * (1.0f + vib) * t;
-
-        float sample = std::sin(phase);
-
-        // envelope ADSR simples
-        float env = 1.0f;
-        float attack = 0.05f;
-        float release = 0.1f;
-
-        if (t < attack)
-            env = t / attack;
-        else if (t > request.duration - release)
-            env = (request.duration - t) / release;
-
-        if (env < 0.0f) env = 0.0f;
-
-        buffer.set(
-            0,
-            i,
-            sample * env * velocity
+        session = new Ort::Session(
+            env,
+            data,
+            size,
+            opts
         );
+        return true;
     }
 
-    return buffer;
-}
+    std::vector<float> infer(
+        const std::vector<NeuralFrameInput>& frames
+    ) override {
+        // v0.3: dummy real
+        std::vector<float> audio(frames.size() * 256);
+        return audio;
+    }
+};
 
 }
