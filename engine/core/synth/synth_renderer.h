@@ -6,6 +6,8 @@
 #include "../audio/audio_buffer.h"
 #include "../voice/loaded_voice.h"
 #include "../seq/auraseq.h"
+#include "../synth/pitch_engine.h"
+
 
 namespace auraloid {
 
