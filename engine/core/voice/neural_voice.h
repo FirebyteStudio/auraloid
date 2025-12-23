@@ -1,6 +1,4 @@
-#pragma once
-
-#include "IVoice.h"
+#include "../neural/neural_onnx.h"
 
 namespace auraloid {
 
@@ -8,9 +6,6 @@ class NeuralVoice : public IVoice {
 public:
     NeuralVoice();
 
-    bool isNeural() const override { return true; }
-
-    // no futuro: carrega ONNX / modelo neural
     bool loadModel(const std::string& path);
 
     AudioBuffer<float> render(
@@ -18,7 +13,7 @@ public:
     ) override;
 
 private:
-    int m_sampleRate;
+    NeuralONNX m_onnx;
 };
 
 }
