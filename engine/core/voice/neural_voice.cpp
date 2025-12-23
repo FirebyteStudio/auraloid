@@ -33,16 +33,42 @@ auto segments = splitNotePhonemes(
     m_loadedVoice->phonemeBaseDurations
 );
 
-for (const auto& seg : segments) {
+for (size_t s = 0; s < segments.size(); ++s) {
+    const auto& seg = segments[s];
+
     int frames =
-        static_cast<int>(seg.duration * 100); // 100 fps neural
+        static_cast<int>(seg.duration * 100);
+
+    int fadeFrames =
+        static_cast<int>(frames * 0.15f);
 
     for (int i = 0; i < frames; ++i) {
-        float t =
-            static_cast<float>(i) / frames;
 
-        float pitch = /* pitch curve real */;
-        float energy = note.velocity;
+        float gain = 1.0f;
+
+        // fade-out do fonema anterior
+        if (s > 0 && i < fadeFrames) {
+            gain *= crossfadeGain(
+                fadeFrames - i,
+                fadeFrames,
+                false
+            );
+        }
+
+        // fade-in do próximo fonema
+        if (s + 1 < segments.size() &&
+            i >= frames - fadeFrames) {
+
+            gain *= crossfadeGain(
+                i - (frames - fadeFrames),
+                fadeFrames,
+                true
+            );
+        }
+
+        // -------- neural frame --------
+        float pitch = /* pitch curve */;
+        float energy = note.velocity * gain;
 
         uint16_t pid =
             m_loadedVoice->getPhonemeId(seg.phoneme);
@@ -50,7 +76,9 @@ for (const auto& seg : segments) {
         neuralInput.push_back(pid);
         neuralInput.push_back(pitch);
         neuralInput.push_back(energy);
-        neuralInput.push_back(t);
+        neuralInput.push_back(
+            static_cast<float>(i) / frames
+        );
     }
 }
 
