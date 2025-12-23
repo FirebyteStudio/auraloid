@@ -1,4 +1,5 @@
 #include "neural_voice.h"
+#include "../synth/pitch_curve.h"
 #include <cmath>
 
 namespace auraloid {
@@ -26,18 +27,35 @@ AudioBuffer<float> NeuralVoice::synthesize(
             float t = static_cast<float>(i) / frameCount;
 
             // pitch simples (Hz)
-            float pitch = 440.0f; // placeholder
+            float basePitch = noteToHz(note.note);
+
+            // intensidade do bend (em semitons)
+            constexpr float pitchRange = 2.0f;
+
+            float curveValue =
+                evalPitchCurve(note.pitchCurve, t);
+
+            float pitchSemitone =
+                curveValue * pitchRange;
+
+            float pitch =
+                basePitch * std::pow(
+                    2.0f,
+                    pitchSemitone / 12.0f
+                );
             float energy = note.velocity;
-            float phoneme =
+           float phoneme =
                 static_cast<float>(
                     m_loadedVoice->getPhonemeId(note.phoneme)
                 );
 
+            float energy = note.velocity;
 
             neuralInput.push_back(phoneme);
             neuralInput.push_back(pitch);
             neuralInput.push_back(energy);
             neuralInput.push_back(t);
+
         }
     }
 
