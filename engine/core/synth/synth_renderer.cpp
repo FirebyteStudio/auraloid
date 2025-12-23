@@ -15,6 +15,10 @@ void SynthRenderer::setSequence(const AuraSeq& sequence) {
     m_sequence = sequence;
 }
 
+PitchEngine pitch;
+float freq = pitch.evaluate(note, noteTimeNormalized);
+
+
 static int noteIndex(char n) {
     switch (n) {
         case 'C': return 0;
