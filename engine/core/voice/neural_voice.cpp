@@ -1,5 +1,6 @@
 #include "neural_voice.h"
 #include "../synth/pitch_curve.h"
+#include "../synth/phoneme_timing.h"
 #include <cmath>
 
 namespace auraloid {
@@ -21,7 +22,37 @@ AudioBuffer<float> NeuralVoice::synthesize(
     std::vector<float> neuralInput;
 
     for (const auto& note : track.notes) {
-        int frameCount = note.length / 60; // v0.3: grosseiro
+        // duração da nota em segundos
+float noteSec =
+    (note.length / static_cast<float>(m_ppq))
+    * (60.0f / m_tempo);
+
+auto segments = splitNotePhonemes(
+    note.phoneme,
+    noteSec,
+    m_loadedVoice->phonemeBaseDurations
+);
+
+for (const auto& seg : segments) {
+    int frames =
+        static_cast<int>(seg.duration * 100); // 100 fps neural
+
+    for (int i = 0; i < frames; ++i) {
+        float t =
+            static_cast<float>(i) / frames;
+
+        float pitch = /* pitch curve real */;
+        float energy = note.velocity;
+
+        uint16_t pid =
+            m_loadedVoice->getPhonemeId(seg.phoneme);
+
+        neuralInput.push_back(pid);
+        neuralInput.push_back(pitch);
+        neuralInput.push_back(energy);
+        neuralInput.push_back(t);
+    }
+}
 
         for (int i = 0; i < frameCount; ++i) {
             float t = static_cast<float>(i) / frameCount;
@@ -44,7 +75,8 @@ AudioBuffer<float> NeuralVoice::synthesize(
                     pitchSemitone / 12.0f
                 );
             float energy = note.velocity;
-           float phoneme =
+            
+            float phoneme =
                 static_cast<float>(
                     m_loadedVoice->getPhonemeId(note.phoneme)
                 );
