@@ -4,6 +4,10 @@
 
 namespace auraloid {
 
+constexpr float VIBRATO_RATE = 5.5f;     // Hz
+constexpr float VIBRATO_DEPTH = 0.35f;   // semitons
+constexpr float VIBRATO_START = 0.2f;    // começa após 20% da nota
+
 PitchEngine::PitchEngine() {}
 
 static int noteIndex(char n) {
@@ -33,15 +37,9 @@ float PitchEngine::noteToFrequency(const std::string& note) const {
     return 440.0f * std::pow(2.0f, (midi - 69) / 12.0f);
 }
 
-float PitchEngine::evaluate(const Note& note, float t) const {
-    float baseFreq = noteToFrequency(note.note);
-
+float PitchEngine::evaluatePitchCurve(const Note& note, float t) const {
     if (note.pitch_curve.empty())
-        return baseFreq;
-
-    // Clamp t
-    if (t <= 0.0f) return baseFreq;
-    if (t >= 1.0f) t = 1.0f;
+        return 0.0f;
 
     const PitchPoint* prev = nullptr;
     const PitchPoint* next = nullptr;
@@ -55,20 +53,34 @@ float PitchEngine::evaluate(const Note& note, float t) const {
     }
 
     if (!prev || !next)
-        return baseFreq;
+        return 0.0f;
 
     float dt = (t - prev->t) / (next->t - prev->t);
-    float bend = prev->v + (next->v - prev->v) * dt;
+    return prev->v + (next->v - prev->v) * dt;
+}
 
-    // v ∈ [-1,1] → semitones (-1 = -1st, +1 = +1st)
-    float semitoneOffset = bend;
-    return baseFreq * std::pow(2.0f, semitoneOffset / 12.0f);
+float PitchEngine::evaluateVibrato(const Note& note, float t) const {
+    if (note.expression != "vibrato")
+        return 0.0f;
+
+    if (t < VIBRATO_START)
+        return 0.0f;
+
+    float localT = (t - VIBRATO_START) / (1.0f - VIBRATO_START);
+
+    float phase = 2.0f * M_PI * VIBRATO_RATE * localT;
+    return std::sin(phase) * VIBRATO_DEPTH;
+}
+
+float PitchEngine::evaluate(const Note& note, float t) const {
+    float baseFreq = noteToFrequency(note.note);
+
+    float curveSemitone = evaluatePitchCurve(note, t);
+    float vibratoSemitone = evaluateVibrato(note, t);
+
+    float totalSemitone = curveSemitone + vibratoSemitone;
+
+    return baseFreq * std::pow(2.0f, totalSemitone / 12.0f);
 }
 
 }
-
-
-    return output;
-}
-
-} // namespace auraloid
