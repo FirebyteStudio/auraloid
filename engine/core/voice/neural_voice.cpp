@@ -1,33 +1,58 @@
-#include "neural_runtime.h"
-#include <onnxruntime_cxx_api.h>
+#include "neural_voice.h"
+#include <cmath>
 
 namespace auraloid {
 
-class NeuralONNXRuntime : public NeuralRuntime {
-    Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "auraloid"};
-    Ort::Session* session = nullptr;
+bool NeuralVoice::loadModel(
+    const void* data,
+    size_t size
+) {
+    return m_runtime.loadFromMemory(data, size);
+}
 
-public:
-    bool loadModel(const void* data, size_t size) override {
-        Ort::SessionOptions opts;
-        opts.SetIntraOpNumThreads(1);
+AudioBuffer<float> NeuralVoice::synthesize(
+    const SeqTrack& track,
+    int sampleRate
+) {
+    // ----------------------------
+    // 1️⃣ Gerar frames neurais
+    // ----------------------------
+    std::vector<float> neuralInput;
 
-        session = new Ort::Session(
-            env,
-            data,
-            size,
-            opts
-        );
-        return true;
+    for (const auto& note : track.notes) {
+        int frameCount = note.length / 60; // v0.3: grosseiro
+
+        for (int i = 0; i < frameCount; ++i) {
+            float t = static_cast<float>(i) / frameCount;
+
+            // pitch simples (Hz)
+            float pitch = 440.0f; // placeholder
+            float energy = note.velocity;
+            float phoneme = 0.0f; // TODO: mapear fonema → id
+
+            neuralInput.push_back(phoneme);
+            neuralInput.push_back(pitch);
+            neuralInput.push_back(energy);
+            neuralInput.push_back(t);
+        }
     }
 
-    std::vector<float> infer(
-        const std::vector<NeuralFrameInput>& frames
-    ) override {
-        // v0.3: dummy real
-        std::vector<float> audio(frames.size() * 256);
-        return audio;
+    // ----------------------------
+    // 2️⃣ Inferência neural
+    // ----------------------------
+    std::vector<float> audio =
+        m_runtime.infer(neuralInput);
+
+    // ----------------------------
+    // 3️⃣ Converter para AudioBuffer
+    // ----------------------------
+    AudioBuffer<float> buffer(1, audio.size());
+
+    for (size_t i = 0; i < audio.size(); ++i) {
+        buffer.set(0, i, audio[i]);
     }
-};
+
+    return buffer;
+}
 
 }
