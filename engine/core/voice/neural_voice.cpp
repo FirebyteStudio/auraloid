@@ -9,9 +9,7 @@ NeuralVoice::NeuralVoice()
     : m_sampleRate(44100) {}
 
 bool NeuralVoice::loadModel(const std::string& path) {
-    // dummy: aceita qualquer coisa
-    std::cout << "[NeuralVoice] Dummy model loaded: " << path << "\n";
-    return true;
+    return m_onnx.load(path);
 }
 
 AudioBuffer<float> NeuralVoice::render(
