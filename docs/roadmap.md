@@ -15,7 +15,7 @@ The roadmap focuses on building a stable core engine first, followed by tooling,
 * Repository structure
 * Licensing and documentation setup
 
-**Status:** In progress
+**Status:** Completed
 
 ---
 
@@ -42,6 +42,8 @@ The roadmap focuses on building a stable core engine first, followed by tooling,
 * Command-line render tool
 * Single-track rendering
 
+**Status:** Completed
+
 ---
 
 ## Phase 2 — Usability Expansion (v0.2)
@@ -54,6 +56,8 @@ The roadmap focuses on building a stable core engine first, followed by tooling,
 * Multi-note smooth transitions
 * Multi-track support
 * Improved timing accuracy
+
+**Status:** In progress
 
 ---
 
