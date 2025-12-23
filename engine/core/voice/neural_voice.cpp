@@ -28,7 +28,11 @@ AudioBuffer<float> NeuralVoice::synthesize(
             // pitch simples (Hz)
             float pitch = 440.0f; // placeholder
             float energy = note.velocity;
-            float phoneme = 0.0f; // TODO: mapear fonema → id
+            float phoneme =
+                static_cast<float>(
+                    m_loadedVoice->getPhonemeId(note.phoneme)
+                );
+
 
             neuralInput.push_back(phoneme);
             neuralInput.push_back(pitch);
