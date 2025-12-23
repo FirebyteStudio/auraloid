@@ -1,31 +1,26 @@
 #pragma once
+#include "../seq/auraseq_loader.h"
+#include <cstdint>
 
-#include <vector>
-#include <string>
+namespace auraloid {
 
-namespace auraloid::synth {
-
-// Represents a resolved phoneme timing unit
-struct PhonemeTiming {
-    std::string phoneme;
-    float start;   // start time in seconds
-    float length;  // duration in seconds
-};
-
-// Timing engine responsible for note-to-phoneme alignment
-// Does NOT handle pitch or audio rendering
 class TimingEngine {
 public:
-    TimingEngine() = default;
+    TimingEngine(int ppq, float tempo, uint32_t sampleRate);
 
-    // Resolve phoneme timings for a note
-    // noteDuration: duration of the note in seconds
-    // phonemes: ordered phoneme list
-    std::vector<PhonemeTiming> resolve(
-        float noteDuration,
-        const std::vector<std::string>& phonemes
-    ) const;
+    // ticks → segundos
+    double ticksToSeconds(int ticks) const;
+
+    // ticks → samples
+    uint64_t ticksToSamples(int ticks) const;
+
+    // duração real de uma nota em samples
+    uint64_t noteLengthSamples(const SeqNote& note) const;
+
+private:
+    int ppq;
+    float tempo;
+    uint32_t sampleRate;
 };
 
-} // namespace auraloid::synth
-
+} // namespace auraloid
