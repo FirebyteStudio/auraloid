@@ -3,7 +3,13 @@
 #include <cmath>
 #include <iostream>
 
+#include "engine/core/synth/pitch_engine.h"
+#include "engine/core/synth/timing_engine.h"
+
 namespace auraloid {
+
+constexpr float CROSSFADE_RATIO = 0.15f;
+constexpr int SAMPLE_RATE = 44100;
 
 SynthRenderer::SynthRenderer() {}
 
@@ -15,36 +21,8 @@ void SynthRenderer::setSequence(const AuraSeq& sequence) {
     m_sequence = sequence;
 }
 
-static int noteIndex(char n) {
-    switch (n) {
-        case 'C': return 0;
-        case 'D': return 2;
-        case 'E': return 4;
-        case 'F': return 5;
-        case 'G': return 7;
-        case 'A': return 9;
-        case 'B': return 11;
-    }
-    return 0;
-}
-
-float SynthRenderer::noteToFrequency(const std::string& note) const {
-    // Example: C4, D#5
-    if (note.size() < 2) return 440.0f;
-
-    char n = note[0];
-    int octave = note.back() - '0';
-    int semitone = noteIndex(n);
-
-    if (note.size() == 3 && note[1] == '#')
-        semitone += 1;
-
-    int midi = (octave + 1) * 12 + semitone;
-    return 440.0f * std::pow(2.0f, (midi - 69) / 12.0f);
-}
-
 AudioBuffer<float> SynthRenderer::render() {
-    AudioBuffer<float> output(1, 44100 * 60); // 1 min max
+    AudioBuffer<float> output(1, SAMPLE_RATE * 60); // 1 min max
     size_t writeCursor = 0;
 
     if (!m_voice) {
@@ -59,23 +37,78 @@ AudioBuffer<float> SynthRenderer::render() {
 
     const auto& track = m_sequence.tracks[0];
 
+    PitchEngine pitchEngine;
+    TimingEngine timingEngine;
+
     for (const auto& note : track.notes) {
-        float freq = noteToFrequency(note.note);
 
-        auto sample = m_voice->getSample(note.phoneme);
-        if (!sample) continue;
+        // duração da nota em segundos
+        float noteDurationSec =
+            (note.length / (float)m_sequence.ppq) *
+            (60.0f / m_sequence.tempo);
 
-        const auto& src = sample->audio;
-        float ratio = freq / sample->baseFrequency;
+        // gerar eventos fonêmicos
+        auto phonemes = timingEngine.generate(
+            note,
+            *m_voice,
+            noteDurationSec
+        );
 
-        for (size_t i = 0; i < src.frames(); ++i) {
-            size_t srcIndex = static_cast<size_t>(i * ratio);
-            if (srcIndex >= src.frames()) break;
+        for (size_t p = 0; p < phonemes.size(); ++p) {
+            const auto& ph = phonemes[p];
 
-            if (writeCursor >= output.frames()) break;
+            auto sample = m_voice->getSample(ph.phoneme);
+            if (!sample) continue;
 
-            float s = src.get(0, srcIndex);
-            output.set(0, writeCursor++, s * note.velocity);
+            const auto& src = sample->audio;
+
+            size_t phonemeFrames =
+                static_cast<size_t>(ph.length * SAMPLE_RATE);
+
+            size_t fadeFrames =
+                static_cast<size_t>(phonemeFrames * CROSSFADE_RATIO);
+
+            for (size_t i = 0; i < phonemeFrames; ++i) {
+                if (writeCursor >= output.frames()) break;
+                if (i >= src.frames()) break;
+
+                // tempo normalizado dentro da nota
+                float noteT =
+                    (ph.start + (i / (float)SAMPLE_RATE)) /
+                    noteDurationSec;
+
+                // frequência com pitch curve
+                float freq = pitchEngine.evaluate(note, noteT);
+                float ratio = freq / sample->baseFrequency;
+
+                size_t srcIndex =
+                    static_cast<size_t>(i * ratio);
+
+                if (srcIndex >= src.frames()) break;
+
+                float gain = 1.0f;
+
+                // fade-in
+                if (p > 0 && i < fadeFrames) {
+                    gain *= (float)i / fadeFrames;
+                }
+
+                // fade-out
+                if (p + 1 < phonemes.size() &&
+                    i >= phonemeFrames - fadeFrames) {
+                    float x =
+                        (phonemeFrames - i) /
+                        (float)fadeFrames;
+                    gain *= x;
+                }
+
+                float s = src.get(0, srcIndex);
+                output.set(
+                    0,
+                    writeCursor++,
+                    s * gain * note.velocity
+                );
+            }
         }
     }
 
