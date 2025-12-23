@@ -10,6 +10,7 @@ public:
 
     bool isNeural() const override { return true; }
 
+    // no futuro: carrega ONNX / modelo neural
     bool loadModel(const std::string& path);
 
     AudioBuffer<float> render(
@@ -17,8 +18,7 @@ public:
     ) override;
 
 private:
-    // placeholder por enquanto
-    int m_sampleRate = 44100;
+    int m_sampleRate;
 };
 
 }
