@@ -1,20 +1,21 @@
 #pragma once
+
 #include <string>
 #include <vector>
+
+#include "engine/core/seq/auraseq.h"
 
 namespace auraloid {
 
 class PitchEngine {
 public:
-    // "C4" → Hz
-    static double noteToFrequency(const std::string& note);
+    PitchEngine();
 
-    // Aplica pitch estático via resampling
-    static std::vector<float> applyPitch(
-        const std::vector<float>& input,
-        double sourceFreq,
-        double targetFreq
-    );
+    // Retorna frequência em Hz no tempo normalizado da nota (0.0–1.0)
+    float evaluate(const Note& note, float t) const;
+
+private:
+    float noteToFrequency(const std::string& note) const;
 };
 
-} // namespace auraloid
+}
