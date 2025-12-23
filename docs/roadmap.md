@@ -71,7 +71,7 @@ The roadmap focuses on building a stable core engine first, followed by tooling,
 * Hybrid sample + neural support
 * Performance optimizations
 
-**Status:** In progress
+**Status:** Completed
 
 ---
 
@@ -84,6 +84,8 @@ The roadmap focuses on building a stable core engine first, followed by tooling,
 * Pitch curve editing
 * Voice selection
 * Real-time preview (non-final quality)
+
+**Status:** In progress
 
 ---
 
