@@ -1,15 +1,15 @@
 #pragma once
-
-#include <onnxruntime_cxx_api.h>
-#include <string>
 #include <vector>
+#include <cstddef>
+#include <onnxruntime_cxx_api.h>
 
 namespace auraloid {
 
 class NeuralONNX {
 public:
     NeuralONNX();
-    bool load(const std::string& modelPath);
+
+    bool loadFromMemory(const void* data, size_t size);
 
     std::vector<float> infer(
         const std::vector<float>& input
@@ -17,8 +17,8 @@ public:
 
 private:
     Ort::Env m_env;
-    Ort::Session* m_session;
     Ort::SessionOptions m_options;
+    Ort::Session* m_session;
 };
 
 }
