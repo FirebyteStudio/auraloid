@@ -13,17 +13,24 @@ NeuralONNX::NeuralONNX()
     );
 }
 
-bool NeuralONNX::load(const std::string& modelPath) {
+bool NeuralONNX::loadFromMemory(
+    const void* data,
+    size_t size
+) {
     try {
         m_session = new Ort::Session(
             m_env,
-            modelPath.c_str(),
+            data,
+            size,
             m_options
         );
-        std::cout << "[ONNX] Model loaded\n";
+
+        std::cout << "[ONNX] Neural model loaded from memory\n";
         return true;
-    } catch (...) {
-        std::cerr << "[ONNX] Failed to load model\n";
+
+    } catch (const Ort::Exception& e) {
+        std::cerr << "[ONNX] Load failed: "
+                  << e.what() << "\n";
         return false;
     }
 }
@@ -31,9 +38,15 @@ bool NeuralONNX::load(const std::string& modelPath) {
 std::vector<float> NeuralONNX::infer(
     const std::vector<float>& input
 ) {
-    // ⚠️ Dummy shape por enquanto
+    if (!m_session) {
+        std::cerr << "[ONNX] Session not initialized\n";
+        return {};
+    }
+
+    // ⚠️ v0.3 — shape simples (batch=1)
     std::vector<int64_t> shape = {
-        1, static_cast<int64_t>(input.size())
+        1,
+        static_cast<int64_t>(input.size())
     };
 
     Ort::MemoryInfo memInfo =
@@ -51,10 +64,10 @@ std::vector<float> NeuralONNX::infer(
             shape.size()
         );
 
-    const char* inputNames[] = {"input"};
+    const char* inputNames[]  = {"input"};
     const char* outputNames[] = {"output"};
 
-    auto output = m_session->Run(
+    auto outputTensors = m_session->Run(
         Ort::RunOptions{nullptr},
         inputNames,
         &inputTensor,
@@ -64,10 +77,12 @@ std::vector<float> NeuralONNX::infer(
     );
 
     float* outData =
-        output[0].GetTensorMutableData<float>();
+        outputTensors[0]
+        .GetTensorMutableData<float>();
 
     size_t outSize =
-        output[0].GetTensorTypeAndShapeInfo()
+        outputTensors[0]
+        .GetTensorTypeAndShapeInfo()
         .GetElementCount();
 
     return std::vector<float>(outData, outData + outSize);
